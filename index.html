@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player with Equalizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #121212;
+            --player-bg: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            --text-color: white;
+            --secondary-text: #b3b3b3;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .theme-icon {
+            font-size: 20px;
+        }
+
+        .developer-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #b3b3b3;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --player-bg: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            --text-color: white;
+            --secondary-text: #b3b3b3;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --player-bg: linear-gradient(145deg, #ffffff, #e6e6e6);
+            --text-color: #121212;
+            --secondary-text: #666666;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .folder-select {
+            background: #1db954;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .player-container {
+            background: var(--player-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .now-playing {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .song-info {
+            flex: 1;
+        }
+
+        .song-title {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #1db954;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-container {
+            background: #4a4a4a;
+            border-radius: 5px;
+            height: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .progress {
+            background: #1db954;
+            border-radius: 5px;
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+
+        .playlist {
+            background: rgba(30, 30, 30, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 14px;
+        }
+
+        .playlist-item {
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .playlist-item:hover {
+            background: #2a2a2a;
+        }
+
+        .playlist-item.active {
+            background: #1db954;
+        }
+
+        .equalizer-container {
+            display: none;
+            background: rgba(30, 30, 30, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .eq-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 15px;
+        }
+
+        .eq-button.active {
+            color: #1db954;
+        }
+
+        .eq-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .eq-slider {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .eq-slider input {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 8px;
+            height: 150px;
+            margin: 10px 0;
+        }
+
+        .eq-slider label {
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+
+        .eq-presets {
+            margin-bottom: 20px;
+        }
+
+        .eq-preset-btn {
+            background: #2a2a2a;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .eq-preset-btn:hover {
+            background: #1db954;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch">
+        <i class="fas fa-sun theme-icon" id="themeIcon"></i>
+    </div>
+
+    <div class="developer-info">
+        Developed By Subhash Sampath
+    </div>
+
+    <div class="container">
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none">
+        <button class="folder-select" onclick="document.getElementById('folderInput').click()">
+            <i class="fas fa-folder-open"></i> Select Music Folder
+        </button>
+
+        <div class="player-container">
+            <div class="now-playing">
+                <div class="song-info">
+                    <div class="song-title" id="currentSong">No song selected</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="prevBtn"><i class="fas fa-backward"></i></button>
+                <button class="control-btn play-btn" id="playBtn"><i class="fas fa-play"></i></button>
+                <button class="control-btn" id="nextBtn"><i class="fas fa-forward"></i></button>
+                <button class="eq-button" id="eqBtn"><i class="fas fa-sliders-h"></i></button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress" id="progress"></div>
+            </div>
+
+            <div class="time-info">
+                <span id="currentTime">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+
+        <div id="equalizerContainer" class="equalizer-container">
+            <div class="eq-presets">
+                <button class="eq-preset-btn" data-preset="flat">Flat</button>
+                <button class="eq-preset-btn" data-preset="rock">Rock</button>
+                <button class="eq-preset-btn" data-preset="pop">Pop</button>
+                <button class="eq-preset-btn" data-preset="jazz">Jazz</button>
+                <button class="eq-preset-btn" data-preset="classical">Classical</button>
+            </div>
+            <div class="eq-controls" id="eqControls"></div>
+        </div>
+
+        <div class="playlist">
+            <div class="playlist-header">
+                <h3>Playlist (<span id="songCount">0</span> songs)</h3>
+                <input type="text" class="search-box" id="searchBox" placeholder="Search songs...">
+            </div>
+            <div id="playlistContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        class MusicPlayer {
+            constructor() {
+                this.audio = new Audio();
+                this.songs = [];
+                this.currentIndex = 0;
+                this.isPlaying = false;
+                this.isEqVisible = false;
+
+                this.initializeElements();
+                this.setupEventListeners();
+                this.setupAudioContext();
+                this.setupEqualizer();
+                this.initializeTheme();
+            }
+
+            initializeTheme() {
+                const hour = new Date().getHours();
+                const isDayTime = hour >= 6 && hour < 18;
+                
+                // Set initial theme based on time
+                document.documentElement.setAttribute('data-theme', isDayTime ? 'light' : 'dark');
+                
+                // Update theme icon
+                const themeIcon = document.getElementById('themeIcon');
+                themeIcon.className = isDayTime ? 'fas fa-sun theme-icon' : 'fas fa-moon theme-icon';
+
+                // Check and update theme every minute
+                setInterval(() => {
+                    const currentHour = new Date().getHours();
+                    const shouldBeDayTheme = currentHour >= 6 && currentHour < 18;
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+
+                    if ((shouldBeDayTheme && currentTheme === 'dark') || 
+                        (!shouldBeDayTheme && currentTheme === 'light')) {
+                        document.documentElement.setAttribute('data-theme', shouldBeDayTheme ? 'light' : 'dark');
+                        themeIcon.className = shouldBeDayTheme ? 'fas fa-sun theme-icon' : 'fas fa-moon theme-icon';
+                    }
+                }, 60000); // Check every minute
+            }
+
+            initializeElements() {
+                this.folderInput = document.getElementById('folderInput');
+                this.currentSongElement = document.getElementById('currentSong');
+                this.playBtn = document.getElementById('playBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.progressContainer = document.getElementById('progressContainer');
+                this.progress = document.getElementById('progress');
+                this.currentTimeElement = document.getElementById('currentTime');
+                this.durationElement = document.getElementById('duration');
+                this.playlistContainer = document.getElementById('playlistContainer');
+                this.songCountElement = document.getElementById('songCount');
+                this.searchBox = document.getElementById('searchBox');
+                this.eqBtn = document.getElementById('eqBtn');
+                this.eqContainer = document.getElementById('equalizerContainer');
+            }
+
+            setupEventListeners() {
+                this.folderInput.addEventListener('change', (e) => this.handleFolderSelect(e));
+                this.playBtn.addEventListener('click', () => this.togglePlay());
+                this.prevBtn.addEventListener('click', () => this.playPrevious());
+                this.nextBtn.addEventListener('click', () => this.playNext());
+                this.progressContainer.addEventListener('click', (e) => this.setProgress(e));
+                this.searchBox.addEventListener('input', () => this.filterPlaylist());
+                this.eqBtn.addEventListener('click', () => this.toggleEqualizer());
+                this.audio.addEventListener('timeupdate', () => this.updateProgress());
+                this.audio.addEventListener('ended', () => this.playNext());
+
+                document.addEventListener('click', () => {
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                }, { once: true });
+
+                document.querySelectorAll('.eq-preset-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.applyPreset(btn.dataset.preset));
+                });
+            }
+
+            setupAudioContext() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.gainNode = this.audioContext.createGain();
+            }
+
+            setupEqualizer() {
+                const frequencies = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000];
+                this.filters = frequencies.map(freq => {
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'peaking';
+                    filter.frequency.value = freq;
+                    filter.Q.value = 1;
+                    filter.gain.value = 0;
+                    return filter;
+                });
+
+                this.filters.reduce((prev, curr) => {
+                    prev.connect(curr);
+                    return curr;
+                });
+
+                const eqControls = document.getElementById('eqControls');
+                frequencies.forEach((freq, i) => {
+                    const slider = document.createElement('div');
+                    slider.className = 'eq-slider';
+                    slider.innerHTML = `
+                        <input type="range" min="-12" max="12" value="0" 
+                               orient="vertical" data-index="${i}">
+                        <label>${freq < 1000 ? freq : freq/1000 + 'k'}Hz</label>
+                    `;
+                    eqControls.appendChild(slider);
+
+                    const input = slider.querySelector('input');
+                    input.addEventListener('input', (e) => {
+                        this.filters[i].gain.value = parseFloat(e.target.value);
+                    });
+                });
+            }
+
+            toggleEqualizer() {
+                this.isEqVisible = !this.isEqVisible;
+                this.eqContainer.style.display = this.isEqVisible ? 'block' : 'none';
+                this.eqBtn.classList.toggle('active', this.isEqVisible);
+            }
+
+            applyPreset(preset) {
+                const presets = {
+                    flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    rock: [4, 3, 2, 2, -1, -1, 3, 4, 4, 4],
+                    pop: [-2, -1, 0, 2, 4, 4, 2, 0, -1, -2],
+                    jazz: [3, 2, -1, -2, -2, -1, 0, 1, 2, 3],
+                    classical: [4, 3, 2, 1, -1, -1, 0, 2, 3, 4]
+                };
+
+                const values = presets[preset] || presets.flat;
+                this.filters.forEach((filter, i) => {
+                    filter.gain.value = values[i];
+                    document.querySelector(`input[data-index="${i}"]`).value = values[i];
+                });
+            }
+
+            async handleFolderSelect(event) {
+                const files = Array.from(event.target.files).filter(file => 
+                    file.type.startsWith('audio/') || file.name.endsWith('.mp3')
+                );
+
+                this.songs = files.map((file, index) => ({
+                    id: index,
+                    name: file.name,
+                    file: file,
+                    path: file.webkitRelativePath || file.name
+                }));
+
+                this.songCountElement.textContent = this.songs.length;
+                this.renderPlaylist();
+                
+                if (this.songs.length > 0) {
+                    await this.loadSong(0);
+                    this.play();
+                }
+            }
+
+            async loadSong(index) {
+                if (index < 0 || index >= this.songs.length) return;
+                
+                this.currentIndex = index;
+                const song = this.songs[index];
+                
+                if (this.audio.src) {
+                    this.audio.src = '';
+                }
+
+                return new Promise((resolve) => {
+                    const url = URL.createObjectURL(song.file);
+                    this.audio.src = url;
+                    this.currentSongElement.textContent = song.name.replace(/\.[^/.]+$/, '');
+                    this.renderPlaylist();
+
+                    this.audio.onloadedmetadata = () => {
+                        if (!this.source) {
+                            this.connectAudioNodes();
+                        }
+                        resolve();
+                    };
+                });
+            }
+
+            connectAudioNodes() {
+                try {
+                    if (this.source) {
+                        this.source.disconnect();
+                    }
+
+                    this.source = this.audioContext.createMediaElementSource(this.audio);
+                    this.source.connect(this.filters[0]);
+                    this.filters[this.filters.length - 1].connect(this.gainNode);
+                    this.gainNode.connect(this.audioContext.destination);
+                } catch (error) {
+                    console.error('Error connecting audio nodes:', error);
+                }
+            }
+
+            play() {
+                try {
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    this.audio.play()
+                        .then(() => {
+                            this.isPlaying = true;
+                            this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        })
+                        .catch(error => {
+                            console.error('Error playing audio:', error);
+                        });
+                } catch (error) {
+                    console.error('Error in play function:', error);
+                }
+            }
+
+            pause() {
+                this.audio.pause();
+                this.isPlaying = false;
+                this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+
+            togglePlay() {
+                if (this.isPlaying) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+
+            async playNext() {
+                const nextIndex = (this.currentIndex + 1) % this.songs.length;
+                await this.loadSong(nextIndex);
+                this.play();
+            }
+
+            async playPrevious() {
+                const prevIndex = (this.currentIndex - 1 + this.songs.length) % this.songs.length;
+                await this.loadSong(prevIndex);
+                this.play();
+            }
+
+            updateProgress() {
+                const { currentTime, duration } = this.audio;
+                const progressPercent = (currentTime / duration) * 100;
+                this.progress.style.width = `${progressPercent}%`;
+                
+                this.currentTimeElement.textContent = this.formatTime(currentTime);
+                this.durationElement.textContent = this.formatTime(duration);
+            }
+
+            setProgress(e) {
+                const width = this.progressContainer.clientWidth;
+                const clickX = e.offsetX;
+                const duration = this.audio.duration;
+                this.audio.currentTime = (clickX / width) * duration;
+            }
+
+            formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+
+            renderPlaylist() {
+                const searchTerm = this.searchBox.value.toLowerCase();
+                const filteredSongs = this.songs.filter(song => 
+                    song.name.toLowerCase().includes(searchTerm)
+                );
+
+                this.playlistContainer.innerHTML = filteredSongs
+                    .map((song, index) => `
+                        <div class="playlist-item ${index === this.currentIndex ? 'active' : ''}"
+                             onclick="player.loadSong(${song.id}).then(() => player.play())">
+                            ${song.name}
+                        </div>
+                    `)
+                    .join('');
+            }
+
+            filterPlaylist() {
+                this.renderPlaylist();
+            }
+        }
+
+        // Initialize the player
+        const player = new MusicPlayer();
+    </script>
+</body>
+</html>
